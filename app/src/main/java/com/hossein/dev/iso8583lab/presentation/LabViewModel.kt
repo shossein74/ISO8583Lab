@@ -49,7 +49,7 @@ class LabViewModel(
             is LabUiEvent.ChangeAmount -> {
                 _uiState.value = _uiState.value.copy(
                     messageBuilderUiState = _uiState.value.messageBuilderUiState.copy(
-                        amount = event.amount.toString()
+                        amount = event.amount
                     )
                 )
             }
