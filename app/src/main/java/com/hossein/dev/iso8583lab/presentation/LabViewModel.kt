@@ -17,12 +17,12 @@ import java.util.Locale
 
 class LabViewModel(
     private val stanRepository: StanRepository
-): ViewModel() {
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LabUiState())
     val uiState: StateFlow<LabUiState> = _uiState
 
-    var stanCounter = 1
+    private var stanCounter: Int = 1
 
     init {
         viewModelScope.launch {
@@ -33,12 +33,13 @@ class LabViewModel(
     }
 
     fun onEvent(event: LabUiEvent) {
-        when(event) {
+        when (event) {
             is LabUiEvent.ChangeTabIndex -> {
                 _uiState.value = _uiState.value.copy(
                     selectedTabIndex = event.index
                 )
             }
+
             is LabUiEvent.ChangeCardNumber -> {
                 _uiState.value = _uiState.value.copy(
                     messageBuilderUiState = _uiState.value.messageBuilderUiState.copy(
@@ -46,6 +47,7 @@ class LabViewModel(
                     )
                 )
             }
+
             is LabUiEvent.ChangeAmount -> {
                 _uiState.value = _uiState.value.copy(
                     messageBuilderUiState = _uiState.value.messageBuilderUiState.copy(
@@ -53,6 +55,7 @@ class LabViewModel(
                     )
                 )
             }
+
             is LabUiEvent.ChangeIsoMessage -> {
                 _uiState.value = _uiState.value.copy(
                     messageParserUiState = _uiState.value.messageParserUiState.copy(
@@ -60,6 +63,7 @@ class LabViewModel(
                     )
                 )
             }
+
             is LabUiEvent.ClearBuildData -> {
                 _uiState.update {
                     it.copy(
@@ -75,6 +79,7 @@ class LabViewModel(
                     )
                 }
             }
+
             is LabUiEvent.ClearParseData -> {
                 _uiState.update {
                     it.copy(
@@ -88,6 +93,7 @@ class LabViewModel(
                     )
                 }
             }
+
             is LabUiEvent.BuildIsoMessage -> buildIsoMessage()
             is LabUiEvent.ParseIsoMessage -> parseIsoMessage()
         }
@@ -103,7 +109,7 @@ class LabViewModel(
             val field7 = CalendarUtil.getJalaliDateTimeForIso(LocalDateTime.now())
             val field11 = "%06d".format(Locale.getDefault(), stanCounter)
 
-            nextStan()
+            incrementStan()
 
             val isoMessage = ISOMsg().apply {
                 packager = ISO87APackager()
@@ -134,10 +140,11 @@ class LabViewModel(
         }
     }
 
-    private fun nextStan() {
+    private fun incrementStan() {
         viewModelScope.launch {
-            stanRepository.saveStan(stanCounter + 1)
-            stanCounter++
+            val next = (stanCounter + 1).coerceAtMost(999_999)
+            stanCounter = if (next > 999_999) 1 else next
+            stanRepository.saveStan(stanCounter)
         }
     }
 

@@ -14,19 +14,15 @@ class StanDataStore(
 ) {
     companion object {
         private val KEY_STAN = intPreferencesKey("stan")
-
-        private const val MAX_STAN = 999_999
-        private const val MIN_STAN = 1
     }
 
     val stanFlow: Flow<Int> = context.dataStore.data.map { prefs ->
-        prefs[KEY_STAN] ?: MIN_STAN
+        prefs[KEY_STAN] ?: 1
     }
 
     suspend fun saveStan(value: Int) {
         context.dataStore.edit { prefs ->
-            val newValue = if (value > MAX_STAN) MIN_STAN else value
-            prefs[KEY_STAN] = newValue
+            prefs[KEY_STAN] = value
         }
     }
 }
