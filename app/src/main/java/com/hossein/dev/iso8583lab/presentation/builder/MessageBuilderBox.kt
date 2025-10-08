@@ -10,11 +10,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -49,7 +51,9 @@ fun MessageBuilderBox(
             onValueChange = { onEvent(LabUiEvent.ChangeCardNumber(it)) },
             label = "Card Number",
             maxLength = PAN_LENGTH,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+            isError = uiState.hasCardNumberError,
+            errorText = uiState.cardNumberValidationError
         )
 
         PrimaryTextField(
@@ -57,7 +61,9 @@ fun MessageBuilderBox(
             onValueChange = { onEvent(LabUiEvent.ChangeAmount(it)) },
             label = "Amount",
             maxLength = AMOUNT_LENGTH,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+            isError = uiState.hasAmountError,
+            errorText = uiState.amountValidationError
         )
 
         Spacer(Modifier.height(2.dp))

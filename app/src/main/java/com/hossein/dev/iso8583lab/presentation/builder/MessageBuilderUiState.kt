@@ -10,7 +10,12 @@ data class MessageBuilderUiState(
     val field4: String = "",
     val field7: String = "",
     val field11: String = "",
-    val builtMessage: String = ""
+    val builtMessage: String = "",
+
+    val cardNumberValidationError: String = "",
+    val amountValidationError: String = "",
+    val hasCardNumberError: Boolean = false,
+    val hasAmountError: Boolean = false,
 ) {
     val isBuiltMessage: Boolean = builtMessage.isNotEmpty()
 }

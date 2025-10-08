@@ -5,7 +5,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.hossein.dev.iso8583lab.data.StanRepository
 import com.hossein.dev.iso8583lab.util.CalendarUtil
+import com.hossein.dev.iso8583lab.util.Constants.MIN_ISO_8583_MESSAGE_LENGTH
+import com.hossein.dev.iso8583lab.util.Constants.PAN_LENGTH
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -21,6 +25,9 @@ class LabViewModel(
 
     private val _uiState = MutableStateFlow(LabUiState())
     val uiState: StateFlow<LabUiState> = _uiState
+
+    private val _uiEffect = MutableSharedFlow<LabUiEffect>()
+    val uiEffect: SharedFlow<LabUiEffect> = _uiEffect
 
     private var stanCounter: Int = 1
 
@@ -94,8 +101,17 @@ class LabViewModel(
                 }
             }
 
-            is LabUiEvent.BuildIsoMessage -> buildIsoMessage()
-            is LabUiEvent.ParseIsoMessage -> parseIsoMessage()
+            is LabUiEvent.BuildIsoMessage -> {
+                if (validateBuildInputs()) {
+                    buildIsoMessage()
+                }
+            }
+
+            is LabUiEvent.ParseIsoMessage -> {
+                if (validateParseInputs()) {
+                    parseIsoMessage()
+                }
+            }
         }
     }
 
@@ -135,8 +151,8 @@ class LabViewModel(
                 )
             }
 
-        } catch (e: Exception) {
-            e.printStackTrace()
+        } catch (_: Exception) {
+            launchEffect(LabUiEffect.ShowSnackBar("Failed to build ISO 8583 message. Please check your input and try again."))
         }
     }
 
@@ -151,7 +167,7 @@ class LabViewModel(
     private fun parseIsoMessage() {
         val message = _uiState.value.messageParserUiState.isoMessage
 
-        if (message.isEmpty()) {
+        if (message.isBlank()) {
             return
         }
 
@@ -163,7 +179,7 @@ class LabViewModel(
                 unpack(bytes)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            launchEffect(LabUiEffect.ShowSnackBar("Failed to parse ISO 8583 message. Please make sure the message format is valid."))
             return
         }
 
@@ -184,13 +200,65 @@ class LabViewModel(
         }
     }
 
+    private fun validateBuildInputs(): Boolean {
+        val state = _uiState.value.messageBuilderUiState
+
+        val (hasCardNumberError, cardNumberErrorText) = when {
+            (state.cardNumber.isBlank()) -> Pair(true, "Please enter your card number.")
+            (state.cardNumber.length != PAN_LENGTH) -> Pair(true, "Enter the full card number.")
+            else -> Pair(false, "")
+        }
+        val hasAmountError = state.amount.isBlank()
+
+        _uiState.update {
+            it.copy(
+                messageBuilderUiState = state.copy(
+                    cardNumberValidationError = cardNumberErrorText,
+                    hasCardNumberError = hasCardNumberError,
+
+                    amountValidationError = if (hasAmountError) "Enter your amount." else "",
+                    hasAmountError = hasAmountError
+                )
+            )
+        }
+
+        return !hasCardNumberError && !hasAmountError
+    }
+
+    private fun validateParseInputs(): Boolean {
+        val state = _uiState.value.messageParserUiState
+
+        val (hasIsoMessageError, textError) = when {
+            state.isoMessage.isBlank() -> Pair(true, "Please enter an ISO 8583 message.")
+            state.isoMessage.length < MIN_ISO_8583_MESSAGE_LENGTH -> Pair(
+                true,
+                "ISO 8583 message is too short."
+            )
+
+            else -> Pair(false, "")
+        }
+
+        _uiState.update {
+            it.copy(
+                messageParserUiState = state.copy(
+                    isoMessageValidationError = textError,
+                    hasIsoMessageError = hasIsoMessageError
+                )
+            )
+        }
+
+        return !hasIsoMessageError
+    }
+
+    private fun launchEffect(effect: LabUiEffect) = viewModelScope.launch {
+        _uiEffect.emit(effect)
+    }
+
     private fun bytesToPrintableString(bytes: ByteArray): String =
-        buildString {
-            for (b in bytes) {
-                val ub = b.toInt() and 0xFF
-                if (ub in 32..126) append(ub.toChar())
-                else append("\\x%02X".format(ub))
-            }
+        bytes.joinToString(separator = "") { b ->
+            val ub = b.toInt() and 0xFF
+            if (ub in 32..126) ub.toChar().toString()
+            else "\\x%02X".format(ub)
         }
 }
 

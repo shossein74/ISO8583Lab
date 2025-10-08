@@ -45,6 +45,12 @@ fun MessageParserBox(
             onValueChange = {
                 onEvent(LabUiEvent.ChangeIsoMessage(it))
             },
+            isError = uiState.hasIsoMessageError,
+            errorText = uiState.isoMessageValidationError,
+            singleLine = false,
+            maxLines = 4,
+            minLines = 2,
+            modifier = Modifier.height(96.dp)
         )
 
         PrimaryButton(
