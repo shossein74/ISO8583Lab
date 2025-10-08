@@ -19,3 +19,6 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+-dontwarn javax.script.ScriptEngineFactory
+-dontwarn org.fusesource.jansi.AnsiConsole
+-dontwarn org.slf4j.impl.StaticLoggerBinder
